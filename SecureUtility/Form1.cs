@@ -167,7 +167,7 @@ namespace SecureUtility {
             FolderBrowserDialog folderBrowserDialog1 = new FolderBrowserDialog();
             folderBrowserDialog1.Description = "请选择要隐藏的文件夹";
             folderBrowserDialog1.ShowNewFolderButton = true;
-            folderBrowserDialog1.RootFolder = Environment.SpecialFolder.Personal;
+            //folderBrowserDialog1.RootFolder = Environment.SpecialFolder.Personal;
             DialogResult result = folderBrowserDialog1.ShowDialog();
             if (result == DialogResult.OK) {
                 string path = folderBrowserDialog1.SelectedPath;
