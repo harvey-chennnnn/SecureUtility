@@ -34,7 +34,7 @@ namespace SecureUtility {
             //注销Id号为100的热键设定
             HotKey.UnregisterHotKey(Handle, 100);
             //注销Id号为101的热键设定
-            HotKey.UnregisterHotKey(Handle, 101);// http://ike.126.com
+            HotKey.UnregisterHotKey(Handle, 101);
             //注销Id号为102的热键设定
             HotKey.UnregisterHotKey(Handle, 102);
             System.Environment.Exit(0);
