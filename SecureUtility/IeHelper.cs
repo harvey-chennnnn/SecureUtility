@@ -12,7 +12,7 @@ namespace SecureUtility {
 
                 foreach (SHDocVw.InternetExplorer iw in sws) {
                     //MessageBox.Show(iw.LocationURL);
-                    if (iw.LocationName == "微博-随时随地发现新鲜事" && iw.LocationURL.Contains("http://weibo.com")) {
+                    if (iw.LocationName == "微博-随时随地发现新鲜事" && iw.LocationURL.Contains("weibo.com")) {
                         //MessageBox.Show(doc.DomDocument.ToString());
                         mshtml.HTMLDocument doc = (mshtml.HTMLDocument)iw.Document;
                         //MessageBox.Show(doc.body.toString());
@@ -23,6 +23,7 @@ namespace SecureUtility {
                         NameValueCollection Values = new NameValueCollection();
                         ih.ReadSectionValues("Blog", Values);
                         ((HTMLInputTextElement)(doc.getElementsByName("username").item(0))).value = Values["User"];
+                        ((HTMLInputTextElement) (doc.getElementsByName("password").item(0))).focus();
                         ((HTMLInputTextElement)(doc.getElementsByName("password").item(0))).value = Values["Pwd"];
                         //((HTMLButtonElement)doc.getElementById("btn_login")).click();
                     }
