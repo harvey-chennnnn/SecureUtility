@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace SecureUtility {
@@ -10,6 +12,16 @@ namespace SecureUtility {
 
         static System.Media.SoundPlayer sPlay = new System.Media.SoundPlayer();
         public static DriveInfo foundDrives;
+
+        private IniFiles iniFiles = new IniFiles(System.AppDomain.CurrentDomain.BaseDirectory + "\\" + "SecUti.ini");
+
+        public string ServerPath { get; set; }
+        public string BackUpTime { get; set; }
+        NameValueCollection BackPath = new NameValueCollection();
+        private System.Timers.Timer timersTimer = new System.Timers.Timer();
+        private delegate void SetTextCallback(string text);
+
+        public static List<ChangedFile> ChangedFiles = new List<ChangedFile>();
         public Form1() {
             InitializeComponent();
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -19,6 +31,19 @@ namespace SecureUtility {
             rdw.NewDriveFound += NewDriveFound;
             rdw.DriveRemoved += DriveRemoved;
             rdw.Start();
+
+            ServerPath = iniFiles.ReadString("Service", "ServerPath", "");
+            BackUpTime = iniFiles.ReadString("Service", "BackUpTime", "");
+            if (!string.IsNullOrEmpty(BackUpTime)) {
+                label4.Text = BackUpTime + " 点";
+            }
+            if (!string.IsNullOrEmpty(ServerPath)) {
+                label4.Text += " 路径: " + ServerPath;
+            }
+            iniFiles.ReadSectionValues("BackPath", BackPath);
+            timersTimer.Enabled = true;
+            timersTimer.Interval = 5000;
+            timersTimer.Elapsed += new System.Timers.ElapsedEventHandler(timersTimer_Elapsed);
             //rdw.Stop();
         }
         private void Form1_Load(object sender, EventArgs e) {
@@ -30,6 +55,80 @@ namespace SecureUtility {
             HotKey.RegisterHotKey(Handle, 102, HotKey.KeyModifiers.Alt, Keys.D);
         }
 
+        void timersTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e) {
+            string curtime = System.DateTime.Now.Hour.ToString();
+            notifyIcon1.ShowBalloonTip(3000, "", "自动备份完成，点击查看详情", ToolTipIcon.Info);
+            notifyIcon1.BalloonTipClicked += BalloonTipClicked;
+            if (!string.IsNullOrEmpty(ServerPath) && BackPath.Count > 0 && curtime == BackUpTime) {
+                BackUpProcess();
+            }
+        }
+        private void BalloonTipClicked(object sender, EventArgs e) {
+            BackUpDetails backUpDetails = new BackUpDetails();
+            DialogResult result = backUpDetails.ShowDialog(this);
+            foreach (ChangedFile changedFile in ChangedFiles) {
+
+            }
+        }
+        void BackUpProcess() {
+            ChangedFiles.Clear();
+            DirectoryInfo serFolder = new DirectoryInfo(ServerPath);
+            if (serFolder.Exists) {
+                foreach (string key in BackPath) {
+                    var path = BackPath[key];
+                    var p = new DirectoryInfo(path);
+                    if (!string.IsNullOrEmpty(path) && p.Exists) {
+                        CopyDirectory(p.FullName, serFolder.FullName);
+                    }
+                }
+            }
+            notifyIcon1.ShowBalloonTip(3000, "", "自动备份完成，点击查看详情", ToolTipIcon.Info);
+            notifyIcon1.BalloonTipClicked += BalloonTipClicked;
+            //SetTextCallback d = new SetTextCallback(SetText);
+            //this.Invoke(d, new object[] { text });
+        }
+
+        public static void CopyDirectory(String sourcePath, String destinationPath) {
+            DirectoryInfo destFolder = new DirectoryInfo(destinationPath);
+            List<string> destSubFoders = destFolder.GetDirectories().Select(f => f.Name).ToList();
+            DirectoryInfo sourceFolder = new DirectoryInfo(sourcePath);
+            if (destSubFoders.Contains(sourceFolder.Name)) {
+                var destPath = Path.Combine(destinationPath, sourceFolder.Name);
+                foreach (FileSystemInfo fsi in sourceFolder.GetFileSystemInfos()) {
+                    String destName = Path.Combine(destPath, fsi.Name);
+                    if (fsi is System.IO.FileInfo) {
+                        var dfsi = new FileInfo(Path.Combine(destPath, fsi.Name));
+                        var file = fsi as FileInfo;
+                        if (dfsi.Exists || dfsi.Length != file.Length) {
+                            File.Copy(fsi.FullName, destName, true);
+                            ChangedFiles.Add(new ChangedFile { FileName = file.Name, Status = "修改" });
+                        }
+                    }
+                    else {
+                        CopyDirectory(fsi.FullName, destName);
+                    }
+                }
+            }
+            else {
+                var destPath = Path.Combine(destinationPath, sourceFolder.Name);
+                Directory.CreateDirectory(destPath);
+                foreach (FileSystemInfo fsi in sourceFolder.GetFileSystemInfos()) {
+                    String destName = Path.Combine(destPath, fsi.Name);
+                    if (fsi is System.IO.FileInfo) {
+                        var file = fsi as FileInfo;
+                        File.Copy(fsi.FullName, destName);
+                        ChangedFiles.Add(new ChangedFile { FileName = file.Name, Status = "新增" });
+                    }
+                    else {
+                        CopyDirectory(fsi.FullName, destName);
+                    }
+                }
+            }
+        }
+        private void SetText(string text) {
+            label1.Text += text;
+        }
+
         private void Form1_Closed(object sender, EventArgs e) {
             //注销Id号为100的热键设定
             HotKey.UnregisterHotKey(Handle, 100);
@@ -37,6 +136,36 @@ namespace SecureUtility {
             HotKey.UnregisterHotKey(Handle, 101);
             //注销Id号为102的热键设定
             HotKey.UnregisterHotKey(Handle, 102);
+            System.Environment.Exit(0);
+        }
+        private void Form1_SizeChanged(object sender, EventArgs e) {
+            if (WindowState == FormWindowState.Minimized) {
+                Hide();
+                notifyIcon1.Visible = true;
+            }
+        }
+
+        private void notifyIcon1_MouseDoubleClick(object sender, MouseEventArgs e) {
+            if (WindowState == FormWindowState.Minimized) {
+                Visible = true;
+                WindowState = FormWindowState.Normal;
+                notifyIcon1.Visible = false;
+            }
+        }
+
+        private void ShowMainWindow_Click(object sender, EventArgs e) {
+            if (WindowState == FormWindowState.Minimized) {
+                Visible = true;
+                WindowState = FormWindowState.Normal;
+                notifyIcon1.Visible = false;
+            }
+        }
+
+        private void Exits_Click(object sender, EventArgs e) {
+            sPlay.Stop();
+            notifyIcon1.Visible = false;
+            Close();
+            Dispose();
             System.Environment.Exit(0);
         }
 
@@ -67,7 +196,7 @@ namespace SecureUtility {
         /// </summary>
         /// <param name="sender">The sender of this event.</param>
         /// <param name="e">The event arguments containing the changed drive.</param>
-        private static void NewDriveFound(object sender, RemovableDriveWatcherEventArgs e) {
+        private void NewDriveFound(object sender, RemovableDriveWatcherEventArgs e) {
             try {
                 foundDrives = e.ChangedDrive;
                 try {
@@ -88,7 +217,7 @@ namespace SecureUtility {
                     try {
                         var path = Values[key];
                         if (path != "") {
-                            listBox3.Items.Add(path);
+                            listBox1.Items.Add(path);
                             //path += ".{2559a1f2-21d7-11d4-bdaf-00c04f60b9f0}";
                             DirectoryInfo d = new DirectoryInfo(path);
                             //if (path.LastIndexOf(".{", StringComparison.Ordinal) != -1) {
@@ -104,9 +233,8 @@ namespace SecureUtility {
                 try {
                     NameValueCollection blog = new NameValueCollection();
                     ih.ReadSectionValues("Blog", blog);
-                    if (!string.IsNullOrEmpty(blog["User"]))
-                    {
-                        listBox4.Items.Add(blog["User"] + "\\********");
+                    if (!string.IsNullOrEmpty(blog["User"])) {
+                        listBox2.Items.Add(blog["User"] + "\\********");
                     }
                 }
                 catch (Exception) {
@@ -122,7 +250,7 @@ namespace SecureUtility {
         /// </summary>
         /// <param name="sender">The sender of this event.</param>
         /// <param name="e">The event arguments containing the changed drive.</param>
-        private static void DriveRemoved(object sender, RemovableDriveWatcherEventArgs e) {
+        private void DriveRemoved(object sender, RemovableDriveWatcherEventArgs e) {
             try {
                 foundDrives = e.ChangedDrive;
                 try {
@@ -136,9 +264,9 @@ namespace SecureUtility {
                 }
                 catch (Exception) {
                 }
-                
+
                 try {
-                    foreach (string path in listBox3.Items) {
+                    foreach (string path in listBox1.Items) {
                         try {
                             DirectoryInfo dx = new DirectoryInfo(path);
                             //if (path.LastIndexOf(".{") == -1) {
@@ -160,8 +288,8 @@ namespace SecureUtility {
                 catch (Exception ex) {
                     MessageBox.Show(ex.Message);
                 }
-                listBox3.Items.Clear();
-                listBox4.Items.Clear();
+                listBox1.Items.Clear();
+                listBox2.Items.Clear();
             }
             catch (Exception) {
             }
@@ -189,12 +317,11 @@ namespace SecureUtility {
                         //    else d.MoveTo(d.Parent.FullName + d.Name + ".{2559a1f2-21d7-11d4-bdaf-00c04f60b9f0}");
                         //}
                         //MessageBox.Show("写入成功");
+                        listBox1.Items.Add(path);
                     }
                     catch (Exception ex) {
-                        MessageBox.Show(ex.Message.ToString());
-
+                        MessageBox.Show(ex.Message);
                     }
-                    listBox3.Items.Add(path);
                 }
             }
         }
@@ -208,14 +335,55 @@ namespace SecureUtility {
                     var ih = new IniFiles(foundDrives.RootDirectory + "\\" + "Sec.ini");
                     ih.WriteString(strSec, "User", TextBox1Text);
                     ih.WriteString(strSec, "Pwd", TextBox2Text);
-                    //MessageBox.Show("写入成功");
+                    listBox2.Items.Add(TextBox1Text + "\\********");
                 }
                 catch (Exception ex) {
-                    MessageBox.Show(ex.Message.ToString());
+                    MessageBox.Show(ex.Message);
+                }
+            }
+        }
+
+        private void TSMI_BackUp_Click(object sender, EventArgs e) {
+            FolderBrowserDialog fbd = new FolderBrowserDialog();
+            fbd.Description = "请选择要备份的文件夹";
+            fbd.ShowNewFolderButton = true;
+            DialogResult result = fbd.ShowDialog();
+            if (result == DialogResult.OK) {
+                string path = fbd.SelectedPath;
+                if (path != "") {
+                    try {
+                        var folderName = Path.GetFileNameWithoutExtension(path);
+                        var strSec = "BackPath";
+                        iniFiles.WriteString(strSec, folderName, path);
+                        BackPath.Add(folderName, path);
+                        listBox3.Items.Add(path);
+                    }
+                    catch (Exception ex) {
+                        MessageBox.Show(ex.Message);
+                    }
+                }
+            }
+        }
+
+        private void TSMI_BackUpTime_Click(object sender, EventArgs e) {
+            BackUpTime form2 = new BackUpTime();
+            DialogResult result = form2.ShowDialog(this);
+            if (BackUpTime != "" && ServerPath != "") {
+                try {
+                    var strSec = "Service";
+                    iniFiles.WriteString(strSec, "ServerPath", ServerPath);
+                    iniFiles.WriteString(strSec, "BackUpTime", BackUpTime);
+                    label4.Text = BackUpTime + " 点 路径: " + ServerPath;
+                }
+                catch (Exception ex) {
+                    MessageBox.Show(ex.Message);
 
                 }
-                listBox4.Items.Add(TextBox1Text + "\\********");
             }
+        }
+
+        private void TSMI_ManullyBackUp_Click(object sender, EventArgs e) {
+            BackUpProcess();
         }
     }
 }
