@@ -89,11 +89,12 @@ namespace SecureUtility {
                         var path = Values[key];
                         if (path != "") {
                             listBox3.Items.Add(path);
-                            path += ".{2559a1f2-21d7-11d4-bdaf-00c04f60b9f0}";
+                            //path += ".{2559a1f2-21d7-11d4-bdaf-00c04f60b9f0}";
                             DirectoryInfo d = new DirectoryInfo(path);
-                            if (path.LastIndexOf(".{", StringComparison.Ordinal) != -1) {
-                                d.MoveTo(path.Substring(0, path.LastIndexOf(".", StringComparison.Ordinal)));
-                            }
+                            //if (path.LastIndexOf(".{", StringComparison.Ordinal) != -1) {
+                            //    d.MoveTo(path.Substring(0, path.LastIndexOf(".", StringComparison.Ordinal)));
+                            //}
+                            d.Attributes = FileAttributes.Archive;
                         }
                     }
                     catch (Exception) {
@@ -103,7 +104,10 @@ namespace SecureUtility {
                 try {
                     NameValueCollection blog = new NameValueCollection();
                     ih.ReadSectionValues("Blog", blog);
-                    listBox4.Items.Add(blog["User"] + "\\********");
+                    if (!string.IsNullOrEmpty(blog["User"]))
+                    {
+                        listBox4.Items.Add(blog["User"] + "\\********");
+                    }
                 }
                 catch (Exception) {
                 }
@@ -137,16 +141,17 @@ namespace SecureUtility {
                     foreach (string path in listBox3.Items) {
                         try {
                             DirectoryInfo dx = new DirectoryInfo(path);
-                            if (path.LastIndexOf(".{") == -1) {
-                                if (!dx.Root.Equals(dx.Parent.FullName)) {
-                                    var fullPath = dx.Parent.FullName + "\\" + dx.Name + ".{2559a1f2-21d7-11d4-bdaf-00c04f60b9f0}";
-                                    dx.MoveTo(fullPath);
-                                }
-                                else {
-                                    var fullPath = dx.Parent.FullName + dx.Name + ".{2559a1f2-21d7-11d4-bdaf-00c04f60b9f0}";
-                                    dx.MoveTo(fullPath);
-                                }
-                            }
+                            //if (path.LastIndexOf(".{") == -1) {
+                            //    if (!dx.Root.Equals(dx.Parent.FullName)) {
+                            //        var fullPath = dx.Parent.FullName + "\\" + dx.Name + ".{2559a1f2-21d7-11d4-bdaf-00c04f60b9f0}";
+                            //        dx.MoveTo(fullPath);
+                            //    }
+                            //    else {
+                            //        var fullPath = dx.Parent.FullName + dx.Name + ".{2559a1f2-21d7-11d4-bdaf-00c04f60b9f0}";
+                            //        dx.MoveTo(fullPath);
+                            //    }
+                            //}
+                            dx.Attributes = FileAttributes.Hidden;
                         }
                         catch (Exception ex) {
                         }
