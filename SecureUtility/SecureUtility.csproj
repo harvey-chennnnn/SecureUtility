@@ -94,6 +94,9 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="BackUpDetails.resx">
+      <DependentUpon>BackUpDetails.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="BackUpTime.resx">
       <DependentUpon>BackUpTime.cs</DependentUpon>
     </EmbeddedResource>

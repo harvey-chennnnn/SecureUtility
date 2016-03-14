@@ -17,6 +17,7 @@ namespace SecureUtility {
 
         public string ServerPath { get; set; }
         public string BackUpTime { get; set; }
+        public DateTime? ExecuteTime = null;
         NameValueCollection BackPath = new NameValueCollection();
         private System.Timers.Timer timersTimer = new System.Timers.Timer();
         private delegate void SetTextCallback(string text);
@@ -42,8 +43,9 @@ namespace SecureUtility {
             }
             iniFiles.ReadSectionValues("BackPath", BackPath);
             timersTimer.Enabled = true;
-            timersTimer.Interval = 5000;
+            timersTimer.Interval = 60000;
             timersTimer.Elapsed += new System.Timers.ElapsedEventHandler(timersTimer_Elapsed);
+            notifyIcon1.BalloonTipClicked += BalloonTipClicked;
             //rdw.Stop();
         }
         private void Form1_Load(object sender, EventArgs e) {
@@ -56,19 +58,18 @@ namespace SecureUtility {
         }
 
         void timersTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e) {
-            string curtime = System.DateTime.Now.Hour.ToString();
-            //notifyIcon1.ShowBalloonTip(3000, "", "自动备份完成，点击查看详情", ToolTipIcon.Info);
-            //notifyIcon1.BalloonTipClicked += BalloonTipClicked;
-            if (!string.IsNullOrEmpty(ServerPath) && BackPath.Count > 0 && curtime == BackUpTime) {
+            string curtime = ExecuteTime == null ? System.DateTime.Now.Hour.ToString() : Convert.ToDateTime(ExecuteTime).Hour.ToString();
+            int curday = ExecuteTime == null ? System.DateTime.Now.Day : Convert.ToDateTime(ExecuteTime).Day;
+
+            if (!string.IsNullOrEmpty(ServerPath) && BackPath.Count > 0 && curtime == BackUpTime && curday >= DateTime.Now.Day) {
                 BackUpProcess();
             }
         }
         private void BalloonTipClicked(object sender, EventArgs e) {
             BackUpDetails backUpDetails = new BackUpDetails();
+            backUpDetails.ChangedFiles = ChangedFiles;
             DialogResult result = backUpDetails.ShowDialog(this);
-            foreach (ChangedFile changedFile in ChangedFiles) {
 
-            }
         }
         void BackUpProcess() {
             ChangedFiles.Clear();
@@ -83,7 +84,7 @@ namespace SecureUtility {
                 }
             }
             notifyIcon1.ShowBalloonTip(3000, "", "自动备份完成，点击查看详情", ToolTipIcon.Info);
-            notifyIcon1.BalloonTipClicked += BalloonTipClicked;
+            ExecuteTime = Convert.ToDateTime(ExecuteTime).AddDays(1);
             //SetTextCallback d = new SetTextCallback(SetText);
             //this.Invoke(d, new object[] { text });
         }
@@ -99,13 +100,13 @@ namespace SecureUtility {
                     if (fsi is System.IO.FileInfo) {
                         var dfsi = new FileInfo(Path.Combine(destPath, fsi.Name));
                         var file = fsi as FileInfo;
-                        if (dfsi.Exists || dfsi.Length != file.Length) {
+                        if (!dfsi.Exists || (dfsi.Exists && dfsi.Length != file.Length)) {
                             File.Copy(fsi.FullName, destName, true);
                             ChangedFiles.Add(new ChangedFile { FileName = file.Name, Status = "修改" });
                         }
                     }
                     else {
-                        CopyDirectory(fsi.FullName, destName);
+                        CopyDirectory(fsi.FullName, destPath);
                     }
                 }
             }
@@ -120,7 +121,7 @@ namespace SecureUtility {
                         ChangedFiles.Add(new ChangedFile { FileName = file.Name, Status = "新增" });
                     }
                     else {
-                        CopyDirectory(fsi.FullName, destName);
+                        CopyDirectory(fsi.FullName, destPath);
                     }
                 }
             }
