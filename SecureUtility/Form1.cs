@@ -57,8 +57,8 @@ namespace SecureUtility {
 
         void timersTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e) {
             string curtime = System.DateTime.Now.Hour.ToString();
-            notifyIcon1.ShowBalloonTip(3000, "", "自动备份完成，点击查看详情", ToolTipIcon.Info);
-            notifyIcon1.BalloonTipClicked += BalloonTipClicked;
+            //notifyIcon1.ShowBalloonTip(3000, "", "自动备份完成，点击查看详情", ToolTipIcon.Info);
+            //notifyIcon1.BalloonTipClicked += BalloonTipClicked;
             if (!string.IsNullOrEmpty(ServerPath) && BackPath.Count > 0 && curtime == BackUpTime) {
                 BackUpProcess();
             }
@@ -179,7 +179,17 @@ namespace SecureUtility {
                             //此处填写快捷键响应代码         
                             break;
                         case 101:    //按下的是Ctrl+B
-                            //此处填写快捷键响应代码
+                            bool bl = false;
+                            foreach (Form f1 in Application.OpenForms) {
+                                if ("Location" == f1.Name) {
+                                    f1.Activate();
+                                    bl = true;
+                                }
+                            }
+                            if (!bl) {
+                                Location ff = new Location();
+                                ff.ShowDialog(this);
+                            }
                             break;
                         case 102:    //按下的是Alt+D
                             //此处填写快捷键响应代码
