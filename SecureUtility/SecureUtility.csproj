@@ -145,12 +145,18 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="favicon.ico" />
+    <None Include="Resources\指纹识别成功.wav" />
+    <None Include="Resources\杨先生您好欢迎使用.wav" />
+    <None Include="Resources\感谢使用再见.wav" />
     <None Include="Resources\防盗定位6.jpg" />
     <None Include="Resources\防盗定位5.jpg" />
     <None Include="Resources\防盗定位4.jpg" />
     <None Include="Resources\防盗定位3.jpg" />
     <None Include="Resources\防盗定位2.jpg" />
     <None Include="Resources\防盗定位1.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="bin\Debug\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

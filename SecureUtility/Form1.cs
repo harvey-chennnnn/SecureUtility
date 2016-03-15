@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
+using System.Media;
 using System.Windows.Forms;
 
 namespace SecureUtility {
@@ -17,7 +18,7 @@ namespace SecureUtility {
 
         public string ServerPath { get; set; }
         public string BackUpTime { get; set; }
-        public DateTime? ExecuteTime = null;
+        public DateTime ExecuteTime = DateTime.Now;
         NameValueCollection BackPath = new NameValueCollection();
         private System.Timers.Timer timersTimer = new System.Timers.Timer();
         private delegate void SetTextCallback(string text);
@@ -43,7 +44,7 @@ namespace SecureUtility {
             }
             iniFiles.ReadSectionValues("BackPath", BackPath);
             timersTimer.Enabled = true;
-            timersTimer.Interval = 60000;
+            timersTimer.Interval = 300000;
             timersTimer.Elapsed += new System.Timers.ElapsedEventHandler(timersTimer_Elapsed);
             notifyIcon1.BalloonTipClicked += BalloonTipClicked;
             //rdw.Stop();
@@ -58,10 +59,7 @@ namespace SecureUtility {
         }
 
         void timersTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e) {
-            string curtime = ExecuteTime == null ? System.DateTime.Now.Hour.ToString() : Convert.ToDateTime(ExecuteTime).Hour.ToString();
-            int curday = ExecuteTime == null ? System.DateTime.Now.Day : Convert.ToDateTime(ExecuteTime).Day;
-
-            if (!string.IsNullOrEmpty(ServerPath) && BackPath.Count > 0 && curtime == BackUpTime && curday >= DateTime.Now.Day) {
+            if (!string.IsNullOrEmpty(ServerPath) && BackPath.Count > 0 && DateTime.Now.Hour.ToString() == BackUpTime && ExecuteTime.Day <= DateTime.Now.Day) {
                 BackUpProcess();
             }
         }
@@ -84,7 +82,24 @@ namespace SecureUtility {
                 }
             }
             notifyIcon1.ShowBalloonTip(3000, "", "自动备份完成，点击查看详情", ToolTipIcon.Info);
-            ExecuteTime = Convert.ToDateTime(ExecuteTime).AddDays(1);
+            ExecuteTime = DateTime.Now.AddDays(1);
+            //SetTextCallback d = new SetTextCallback(SetText);
+            //this.Invoke(d, new object[] { text });
+        }
+
+        void ManullyBackUpProcess() {
+            ChangedFiles.Clear();
+            DirectoryInfo serFolder = new DirectoryInfo(ServerPath);
+            if (serFolder.Exists) {
+                foreach (string key in BackPath) {
+                    var path = BackPath[key];
+                    var p = new DirectoryInfo(path);
+                    if (!string.IsNullOrEmpty(path) && p.Exists) {
+                        CopyDirectory(p.FullName, serFolder.FullName);
+                    }
+                }
+            }
+            notifyIcon1.ShowBalloonTip(3000, "", "手动备份完成，点击查看详情", ToolTipIcon.Info);
             //SetTextCallback d = new SetTextCallback(SetText);
             //this.Invoke(d, new object[] { text });
         }
@@ -211,11 +226,11 @@ namespace SecureUtility {
             try {
                 foundDrives = e.ChangedDrive;
                 try {
-                    sPlay.SoundLocation = System.AppDomain.CurrentDomain.BaseDirectory + "指纹识别成功.wav";
+                    sPlay.Stream = Properties.Resources.指纹识别成功;
                     sPlay.Load();
                     sPlay.Play();
                     //Thread.Sleep(1000);
-                    sPlay.SoundLocation = System.AppDomain.CurrentDomain.BaseDirectory + "杨先生您好，欢迎使用.wav";
+                    sPlay.Stream = Properties.Resources.杨先生您好欢迎使用;
                     sPlay.Load();
                     sPlay.Play();
                 }
@@ -265,11 +280,11 @@ namespace SecureUtility {
             try {
                 foundDrives = e.ChangedDrive;
                 try {
-                    sPlay.SoundLocation = System.AppDomain.CurrentDomain.BaseDirectory + "指纹识别成功.wav";
+                    sPlay.Stream = Properties.Resources.指纹识别成功;
                     sPlay.Load();
                     sPlay.Play();
                     //Thread.Sleep(1000);
-                    sPlay.SoundLocation = System.AppDomain.CurrentDomain.BaseDirectory + "感谢使用，再见.wav";
+                    sPlay.Stream = Properties.Resources.感谢使用再见;
                     sPlay.Load();
                     sPlay.Play();
                 }
@@ -394,7 +409,7 @@ namespace SecureUtility {
         }
 
         private void TSMI_ManullyBackUp_Click(object sender, EventArgs e) {
-            BackUpProcess();
+            ManullyBackUpProcess();
         }
     }
 }
