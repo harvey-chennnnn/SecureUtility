@@ -70,6 +70,7 @@
     <Compile Include="ChangedFile.cs" />
     <Compile Include="IeHelper.cs" />
     <Compile Include="HotKey.cs" />
+    <Compile Include="Ini.cs" />
     <Compile Include="IniFiles.cs" />
     <Compile Include="Form2.cs">
       <SubType>Form</SubType>

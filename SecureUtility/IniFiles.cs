@@ -23,7 +23,7 @@ namespace SecureUtility {
             //Todo:搞清枚举的用法
             if ((!fileInfo.Exists)) { //|| (FileAttributes.Directory in fileInfo.Attributes))
                 //文件不存在，建立文件
-                System.IO.StreamWriter sw = new System.IO.StreamWriter(AFileName, false, System.Text.Encoding.Default);
+                System.IO.StreamWriter sw = new System.IO.StreamWriter(AFileName, false, System.Text.Encoding.Unicode);
                 try {
                     sw.Write("#表格配置档案");
                     sw.Close();
@@ -50,7 +50,7 @@ namespace SecureUtility {
             //必须设定0（系统默认的代码页）的编码方式，否则无法支持中文
             string s = Encoding.GetEncoding(0).GetString(Buffer);
             s = s.Substring(0, bufLen);
-            return s.Trim();
+            return s.Trim().Trim('\0');
         }
 
         //读整数
